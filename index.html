@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Canvas Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="animationCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let time = 0;
+        const loopDuration = 1200;
+        const speed = (2 * Math.PI) / loopDuration;
+        const amplitudeX = 150;
+        const amplitudeY = 100;
+        let scaleFactor = 0.5;
+
+        // Resize canvas and redraw
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            scaleFactor = Math.min(canvas.width, canvas.height) / 1000 * 0.5; // Scale down by 5%
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        resizeCanvas(); // Initial resize
+
+        // Load images
+        const loadImage = (src) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(`Error loading image: ${src}`);
+            });
+        };
+
+        const circleImgSrc = 'circle.webp';
+        const chickImgSrc = 'chick.webp';
+        const creepImgSrc = 'creep.webp';
+
+        Promise.all([loadImage(circleImgSrc), loadImage(chickImgSrc), loadImage(creepImgSrc)])
+            .then(([circleImg, chickImg, creepImg]) => {
+                function draw() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    const circleRotation = (time * speed) % (2 * Math.PI);
+                    drawScaledImage(circleImg, scaleFactor, circleRotation);
+
+                    const chickScale = (1 + 0.03 * Math.cos(time * speed)) * scaleFactor;
+                    drawScaledImage(chickImg, chickScale);
+
+                    const x = Math.sin(time * speed) * amplitudeX * scaleFactor;
+                    const y = Math.sin(time * speed) * amplitudeY * scaleFactor;
+                    drawScaledImage(creepImg, scaleFactor, 0, x, y);
+
+                    time = (time + 1) % loopDuration;
+                    requestAnimationFrame(draw);
+                }
+
+                draw(); // Start animation
+            })
+            .catch((error) => {
+                console.error(error);
+                ctx.fillStyle = 'red';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(error, canvas.width / 2, canvas.height / 2);
+            });
+
+        function drawScaledImage(img, scale, rotation = 0, offsetX = 0, offsetY = 0) {
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+            const scaledWidth = imgWidth * scale;
+            const scaledHeight = imgHeight * scale;
+
+            ctx.save();
+            ctx.translate(canvas.width / 2 + offsetX, canvas.height / 2 + offsetY);
+            if (rotation) ctx.rotate(rotation);
+            ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>
